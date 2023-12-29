@@ -1,0 +1,171 @@
+#include <iostream>
+#include <fstream>
+// #include <cmath>
+// #include <string>
+#include <iomanip>
+// #include <Windows.h>
+
+using std::cout; using std::cin; using std::endl;
+bool LR = 0;
+// bool endOfMatrix(const int& row, const int& col, const int& maxRows, const int& maxCols);
+void downLeft(int** arr, int& row, int& col, int& count, const int& maxCols, const int& maxRows);
+void upRight(int** arr, int& row, int& col, int& count, const int& maxCols, const int& maxRows);
+
+int main()
+{
+    setlocale(LC_ALL, "rus");
+    // srand(time(NULL));
+    // SetConsoleCP(1251); // функция устанавливает кодовую таблицу(win-cp 1251) для работы с потоком ввода
+    // SetConsoleOutputCP(1251); // функция устанавливает кодовую таблицу(win-cp 1251) для работы с потоком вывода
+    // rand();
+    const int firstNumber = 1;
+    int maxRows, maxCols, row{ 0 }, col{ 0 }, count = firstNumber + 1;
+
+    cout << "Программа заполняет зигзагом матрицу последовательно увеличивающимися на 1 числами и выводит её в консоль или файл по выбору пользователя\n\n";
+    makeNewMatrix:
+    cout << "Введите количество строк матрицы: ";
+    cin >> maxRows;
+    cout << "Введите количество столбцов матрицы: ";
+    cin >> maxCols;
+
+    int** arr = new int* [maxRows];                   // Выделение динамического массива под матрицу
+    for (int i = 0; i < maxRows; ++i)
+        arr[i] = new int[maxCols];
+    arr[0][0] = count - 1;                            // заполнение первого элемента матрицы
+
+    for (int i = 0; i < maxRows * maxCols - 1; ++i)   // Выбор функции направления движения. Начинаем с влево-вниз (LR = 0)
+    {
+        if (LR == 0)
+            downLeft(arr, row, col, count, maxCols, maxRows);
+        else
+            upRight(arr, row, col, count, maxCols, maxRows);
+    }
+
+    int digits = 0;
+    for (int biggestDigit = maxRows * maxCols; biggestDigit > 0; ++digits)   // Подсчет количества цифр в последнем числе
+        biggestDigit /= 10;
+    
+    int choice{ 1 };
+    do {
+        cout << "\nВведите число для выбора действия. \n1 - вывести на экран\n2 - вывести в текстовый файл\n3 - создать матрицу заново\n0 - выйти из программы\n";
+        cin >> choice;
+        cout << endl;
+        if (choice == 1)
+        {
+            for (int i = 0; i < maxRows; ++i)                 // Вывод матрицы на экран
+            {
+                for (int j = 0; j < maxCols; ++j)
+                {
+                    cout << std::setw(digits + 1) << std::left << arr[i][j];
+                }
+                cout << endl;
+            }
+        }
+        else if (choice == 2)
+        {
+            std::ofstream fout("matrix.txt");
+            if (fout.is_open())
+            {
+                for (int i = 0; i < maxRows; ++i)                 // Вывод матрицы в файл. Откуда лишний пробел в консольном выводе после операции вывода в файл?
+                {
+                    for (int j = 0; j < maxCols; ++j)
+                    {
+                        fout << std::setw(digits + 1) << std::left << arr[i][j];
+                    }
+                    fout << endl;
+                }
+                fout.close();
+                cout << "Матрица записана в файл matrix.txt\n";
+            }
+            else
+                cout << "Невозможно создать/открыть файл matrix.txt для записи\n";
+          }
+        else if (choice == 3)
+        {
+            for (int i = 0; i < maxRows; ++i)                 // Удаление динамически выделенной памяти
+                delete[] arr[i];
+            delete[] arr;
+            maxRows = 0; maxCols = 0; row = 0; col = 0; count = firstNumber + 1; LR = 0;  // возврат к исходным значениям
+            goto makeNewMatrix;                                                           // матрица создается заново (вводится новый размер матрицы)
+        }
+    } while (choice != 0);
+
+    for (int i = 0; i < maxRows; ++i)                 // Удаление динамически выделенной памяти
+        delete[] arr[i];
+    delete[] arr;
+
+    system("pause");
+    return 0;
+}
+/*
+bool endOfMatrix(const int& row, const int& col, const int& maxRows, const int& maxCols)
+{
+    return (row == maxRows - 1 && col == maxCols - 1);
+}
+*/
+void downLeft(int** arr, int& row, int& col, int& count, const int& maxCols, const int& maxRows)
+{
+    //if (endOfMatrix(row, col, maxRows, maxCols)) // проверка условия окончания заполнения матрицы
+    //    return;
+    if (col - 1 < 0 && row + 1 < maxRows) // влево нельзя, вниз можно
+    {
+        arr[row + 1][col] = count++; // идем вниз
+        ++row;
+        LR = 1;
+    }
+    else if (row + 1 >= maxRows) // вниз нельзя
+    {
+        arr[row][col + 1] = count++; // идем вправо
+        ++col;
+        LR = 1;
+    }
+    else
+    {
+        arr[row + 1][col - 1] = count++; // идем влево и вниз
+        ++row; --col;
+        LR = 0;
+    }
+}
+
+void upRight(int** arr, int& row, int& col, int& count, const int& maxCols, const int& maxRows)
+{
+    //if (endOfMatrix(row, col, maxRows, maxCols)) // проверка условия окончания заполнения матрицы
+    //    return;
+    if (row - 1 < 0 && col + 1 < maxCols) // вверх нельзя, вправо можно
+    {
+        arr[row][col + 1] = count++; // идем вправо
+        ++col;
+        LR = 0;
+    }
+    else if (col + 1 >= maxCols) // вправо нельзя
+    {
+        arr[row + 1][col] = count++; // идем вниз
+        ++row;
+        LR = 0;
+    }
+    else
+    {
+        arr[row - 1][col + 1] = count++; // идем вправо и вверх
+        --row; ++col;
+        LR = 1;
+    }
+}
+
+/*
+
+rand() % 100
+std::ofstream fout("cppstudio.txt"); // создаём объект класса ofstream для записи и связываем его с файлом cppstudio.txt
+fout << "Работа с файлами в С++"; // запись строки в файл
+fout.close(); // закрываем файл
+
+for (int i = 0; i < row; ++i)
+{
+    for (int j = 0; j < col; ++j)
+    {
+        arr[i * col + j] = count++;
+        cout << std::setw(3) << std::left << arr[i * col + j];
+    }
+    cout << endl;
+}
+
+*/
